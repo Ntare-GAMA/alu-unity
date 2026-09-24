@@ -27,6 +27,7 @@ public static class ARBusinessCardBuilder
     // ----- Paths -----
     private const string ScenePath = "Assets/Scenes/ARBusinessCard.unity";
     private const string MarkerPath = "Assets/Textures/ARBusinessCardMarker.png";
+    private const string HbtnMarkerPath = "Assets/Textures/HBTNARMarker.png";
     private const string IconFolder = "Assets/Textures/Icons/";
     private const string ClickPath = "Assets/Audio/ButtonClick.wav";
     private const string MarkerMaterialPath = "Assets/Materials/MarkerPreview.mat";
@@ -36,6 +37,8 @@ public static class ARBusinessCardBuilder
     // Printed marker width in meters (marker image is 3:2)
     private const float MarkerWidth = 0.15f;
     private const float MarkerHeight = MarkerWidth * 2f / 3f;
+    // Default Holberton marker is square: same height as the custom marker so the card sits the same way on both
+    private const float HbtnMarkerWidth = MarkerHeight;
     // Canvas size in canvas units, mapped to a physical card slightly wider than the marker
     private const float CanvasWidth = 1000f;
     private const float CanvasHeight = 620f;
@@ -171,8 +174,12 @@ public static class ARBusinessCardBuilder
         // Image target setup
         var targetGo = new GameObject("ImageTarget");
         var markerTarget = targetGo.AddComponent<ARMarkerTarget>();
-        markerTarget.markerTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(MarkerPath);
-        markerTarget.printedWidth = MarkerWidth;
+        markerTarget.markerTextures = new[]
+        {
+            AssetDatabase.LoadAssetAtPath<Texture2D>(HbtnMarkerPath),
+            AssetDatabase.LoadAssetAtPath<Texture2D>(MarkerPath),
+        };
+        markerTarget.printedWidths = new[] { HbtnMarkerWidth, MarkerWidth };
         markerTarget.cardAnchor = anchor;
         markerTarget.cardAnimator = animator;
 
@@ -253,16 +260,20 @@ public static class ARBusinessCardBuilder
         PlayerSettings.iOS.targetOSVersionString = "15.0";
     }
 
-    // Marker must be readable and uncompressed for runtime image targets; icons are UI sprites
+    // Markers must be readable and uncompressed for runtime image targets; icons are UI sprites
     private static void ConfigureImporters()
     {
-        var marker = (TextureImporter)AssetImporter.GetAtPath(MarkerPath);
-        marker.textureType = TextureImporterType.Default;
-        marker.isReadable = true;
-        marker.mipmapEnabled = false;
-        marker.npotScale = TextureImporterNPOTScale.None;
-        marker.textureCompression = TextureImporterCompression.Uncompressed;
-        marker.SaveAndReimport();
+        AssetDatabase.Refresh();
+        foreach (string path in new[] { MarkerPath, HbtnMarkerPath })
+        {
+            var marker = (TextureImporter)AssetImporter.GetAtPath(path);
+            marker.textureType = TextureImporterType.Default;
+            marker.isReadable = true;
+            marker.mipmapEnabled = false;
+            marker.npotScale = TextureImporterNPOTScale.None;
+            marker.textureCompression = TextureImporterCompression.Uncompressed;
+            marker.SaveAndReimport();
+        }
 
         foreach (string icon in new[] { "icon_email", "icon_github", "icon_twitter", "icon_linkedin" })
         {
