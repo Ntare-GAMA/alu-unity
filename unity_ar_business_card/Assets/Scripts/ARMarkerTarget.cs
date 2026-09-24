@@ -2,36 +2,34 @@ using UnityEngine;
 using Vuforia;
 
 /// <summary>
-/// Creates the Vuforia Image Target for the business card marker once Vuforia has started,
-/// anchors the card layout to it and shows / hides the card depending on the tracking status.
+/// Creates a Vuforia Image Target for each business card marker once Vuforia has started,
+/// anchors the card layout to whichever marker is tracked and shows / hides the card
+/// depending on the tracking status.
 /// </summary>
 public class ARMarkerTarget : MonoBehaviour
 {
-    /// <summary>Marker image to track. Must be imported with Read/Write enabled and no compression.</summary>
-    public Texture2D markerTexture;
+    /// <summary>Marker images to track. Each must be imported with Read/Write enabled and no compression.</summary>
+    public Texture2D[] markerTextures;
 
-    /// <summary>Real-world width of the printed marker, in meters.</summary>
-    public float printedWidth = 0.15f;
+    /// <summary>Width of each marker in scene units, one entry per texture in markerTextures.</summary>
+    public float[] printedWidths;
 
-    /// <summary>Name given to the image target created at runtime.</summary>
-    public string targetName = "ARBusinessCardMarker";
-
-    /// <summary>Root transform of the business card layout that gets anchored to the marker.</summary>
+    /// <summary>Root transform of the business card layout that gets anchored to the tracked marker.</summary>
     public Transform cardAnchor;
 
-    /// <summary>Animator that plays the card intro when the marker is found.</summary>
+    /// <summary>Animator that plays the card intro when a marker is found.</summary>
     public BusinessCardAnimator cardAnimator;
 
-    // Image target created from markerTexture
-    private ImageTargetBehaviour target;
+    // Image targets created from markerTextures
+    private ImageTargetBehaviour[] targets;
 
-    // Whether the card is currently shown
-    private bool isVisible;
+    // Target the card is currently shown on, null while hidden
+    private ObserverBehaviour currentTarget;
 
     // Hide the card and wait for Vuforia to be ready
     private void Awake()
     {
-        SetCardVisible(false);
+        cardAnimator.SetVisible(false);
         VuforiaApplication.Instance.OnVuforiaStarted += OnVuforiaStarted;
     }
 
@@ -40,47 +38,53 @@ public class ARMarkerTarget : MonoBehaviour
     {
         if (VuforiaApplication.Instance != null)
             VuforiaApplication.Instance.OnVuforiaStarted -= OnVuforiaStarted;
-        if (target != null)
-            target.OnTargetStatusChanged -= OnTargetStatusChanged;
+        if (targets == null)
+            return;
+        foreach (ImageTargetBehaviour target in targets)
+        {
+            if (target != null)
+                target.OnTargetStatusChanged -= OnTargetStatusChanged;
+        }
     }
 
-    // Build the image target from the marker texture and parent the card under it
+    // Build one image target per marker texture
     private void OnVuforiaStarted()
     {
-        if (target != null)
+        if (targets != null)
             return;
 
-        target = VuforiaBehaviour.Instance.ObserverFactory.CreateImageTarget(markerTexture, printedWidth, targetName);
-        if (target == null)
+        targets = new ImageTargetBehaviour[markerTextures.Length];
+        for (int i = 0; i < markerTextures.Length; i++)
         {
-            Debug.LogError("ARMarkerTarget: could not create the image target from " + markerTexture.name);
-            return;
+            Texture2D texture = markerTextures[i];
+            targets[i] = VuforiaBehaviour.Instance.ObserverFactory.CreateImageTarget(texture, printedWidths[i], texture.name);
+            if (targets[i] == null)
+            {
+                Debug.LogError("ARMarkerTarget: could not create the image target from " + texture.name);
+                continue;
+            }
+            targets[i].OnTargetStatusChanged += OnTargetStatusChanged;
         }
-
-        cardAnchor.SetParent(target.transform, false);
-        cardAnchor.localPosition = Vector3.zero;
-        cardAnchor.localRotation = Quaternion.identity;
-        cardAnchor.localScale = Vector3.one;
-        target.OnTargetStatusChanged += OnTargetStatusChanged;
     }
 
-    // Show the card only while the marker itself is in view
+    // Show the card on a marker while it is in view, hide it when that marker is lost
     private void OnTargetStatusChanged(ObserverBehaviour behaviour, TargetStatus status)
     {
         bool tracked = status.Status == Status.TRACKED;
-        if (tracked == isVisible)
-            return;
-
-        SetCardVisible(tracked);
-        if (tracked)
+        if (tracked && currentTarget == null)
+        {
+            currentTarget = behaviour;
+            cardAnchor.SetParent(behaviour.transform, false);
+            cardAnchor.localPosition = Vector3.zero;
+            cardAnchor.localRotation = Quaternion.identity;
+            cardAnchor.localScale = Vector3.one;
+            cardAnimator.SetVisible(true);
             cardAnimator.PlayIntro();
-    }
-
-    // Toggle every element of the card at once
-    private void SetCardVisible(bool visible)
-    {
-        isVisible = visible;
-        if (cardAnimator != null)
-            cardAnimator.SetVisible(visible);
+        }
+        else if (!tracked && behaviour == currentTarget)
+        {
+            currentTarget = null;
+            cardAnimator.SetVisible(false);
+        }
     }
 }
