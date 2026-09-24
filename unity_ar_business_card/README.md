@@ -7,18 +7,21 @@ and opens the link.
 
 ![Layout](Screenshots/BusinessCardLayout.png)
 
-## Marker
+## Markers
 
-This project uses a custom marker: [Marker/ARBusinessCardMarker.png](Marker/ARBusinessCardMarker.png).
-It uses high-contrast, non-repeating shapes with many sharp corners so Vuforia can detect it reliably.
-Print it about 15 cm wide, or show it full screen on another device.
+The app recognizes two markers. The card appears on whichever one the camera sees:
+
+- [Marker/HBTNARMarker.png](Marker/HBTNARMarker.png): the default Holberton marker from the project.
+- [Marker/ARBusinessCardMarker.png](Marker/ARBusinessCardMarker.png): a custom marker. It uses high-contrast, non-repeating shapes with many sharp corners so Vuforia can detect it reliably.
+
+Print a marker, or show it full screen on another device.
 
 ## Tasks
 
 | Task | Where |
 | --- | --- |
 | 0. Layout | `0-layout` (link to `Screenshots/BusinessCardLayout.png`) |
-| 1. Target acquired | `ARMarkerTarget` creates the image target from the marker when Vuforia starts. It anchors the card to the target and shows the card only while the target status is `TRACKED`. |
+| 1. Target acquired | `ARMarkerTarget` creates an image target for each marker when Vuforia starts. It anchors the card to the marker in view and shows the card only while that target is `TRACKED`. |
 | 2. Animated reality | `BusinessCardAnimator`: the card pops up and tilts to 55°, the accent bar sweeps open, the header slides in, the buttons pop in one by one, then the card floats gently while idle |
 | 3. Social link up | `LinkButton`: each button opens its link with `Application.OpenURL` (`mailto:`, GitHub, X, LinkedIn). Pressing gives a color tint, a squash-and-bounce, and a click sound. |
 | 4. Builds | `Builds/Android/ARBusinessCard.apk`, `Builds/iOS/` (Xcode project) |
