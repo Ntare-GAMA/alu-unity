@@ -54,3 +54,7 @@ Screenshots/      layout screenshot
 
 The card text and links live in the constants at the top of `Assets/Editor/ARBusinessCardBuilder.cs`.
 After editing them, run **AR Business Card > Build Scene**. Use **Build Android** or **Build iOS** to rebuild the players.
+
+Builds:
+Android_apk : https://drive.google.com/file/d/1z5r1sPSsjwriWARwJfcFaERm0YgPq0fQ/view?usp=sharing
+iOS : https://drive.google.com/file/d/1VAla48P2rWTMPxHjNGa45Ti4H-XwdHSu/view?usp=sharing
